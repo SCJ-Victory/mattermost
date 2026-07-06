@@ -687,6 +687,36 @@ func (_m *Hooks) UserHasBeenDeactivated(c *plugin.Context, user *model.User) {
 	_m.Called(c, user)
 }
 
+// UserWillBeUpdated provides a mock function with given fields: c, newUser, oldUser, asAdmin
+func (_m *Hooks) UserWillBeUpdated(c *plugin.Context, newUser *model.User, oldUser *model.User, asAdmin bool) (*model.User, string) {
+	ret := _m.Called(c, newUser, oldUser, asAdmin)
+
+	if len(ret) == 0 {
+		panic("no return value specified for UserWillBeUpdated")
+	}
+
+	var r0 *model.User
+	var r1 string
+	if rf, ok := ret.Get(0).(func(*plugin.Context, *model.User, *model.User, bool) (*model.User, string)); ok {
+		return rf(c, newUser, oldUser, asAdmin)
+	}
+	if rf, ok := ret.Get(0).(func(*plugin.Context, *model.User, *model.User, bool) *model.User); ok {
+		r0 = rf(c, newUser, oldUser, asAdmin)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*model.User)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(*plugin.Context, *model.User, *model.User, bool) string); ok {
+		r1 = rf(c, newUser, oldUser, asAdmin)
+	} else {
+		r1 = ret.Get(1).(string)
+	}
+
+	return r0, r1
+}
+
 // UserHasJoinedChannel provides a mock function with given fields: c, channelMember, actor
 func (_m *Hooks) UserHasJoinedChannel(c *plugin.Context, channelMember *model.ChannelMember, actor *model.User) {
 	_m.Called(c, channelMember, actor)
@@ -728,6 +758,66 @@ func (_m *Hooks) UserWillLogIn(c *plugin.Context, user *model.User) string {
 	}
 
 	return r0
+}
+
+// BeforeSearchUsers provides a mock function with given fields: c, search, options, asAdmin
+func (_m *Hooks) BeforeSearchUsers(c *plugin.Context, search *model.UserSearch, options *model.UserSearchOptions, asAdmin bool) ([]*model.User, string) {
+	ret := _m.Called(c, search, options, asAdmin)
+
+	if len(ret) == 0 {
+		panic("no return value specified for BeforeSearchUsers")
+	}
+
+	var r0 []*model.User
+	var r1 string
+	if rf, ok := ret.Get(0).(func(*plugin.Context, *model.UserSearch, *model.UserSearchOptions, bool) ([]*model.User, string)); ok {
+		return rf(c, search, options, asAdmin)
+	}
+	if rf, ok := ret.Get(0).(func(*plugin.Context, *model.UserSearch, *model.UserSearchOptions, bool) []*model.User); ok {
+		r0 = rf(c, search, options, asAdmin)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]*model.User)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(*plugin.Context, *model.UserSearch, *model.UserSearchOptions, bool) string); ok {
+		r1 = rf(c, search, options, asAdmin)
+	} else {
+		r1 = ret.Get(1).(string)
+	}
+
+	return r0, r1
+}
+
+// BeforeGetUsersPage provides a mock function with given fields: options, asAdmin
+func (_m *Hooks) BeforeGetUsersPage(options *model.UserGetOptions, asAdmin bool) ([]*model.User, string) {
+	ret := _m.Called(options, asAdmin)
+
+	if len(ret) == 0 {
+		panic("no return value specified for BeforeGetUsersPage")
+	}
+
+	var r0 []*model.User
+	var r1 string
+	if rf, ok := ret.Get(0).(func(*model.UserGetOptions, bool) ([]*model.User, string)); ok {
+		return rf(options, asAdmin)
+	}
+	if rf, ok := ret.Get(0).(func(*model.UserGetOptions, bool) []*model.User); ok {
+		r0 = rf(options, asAdmin)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]*model.User)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(*model.UserGetOptions, bool) string); ok {
+		r1 = rf(options, asAdmin)
+	} else {
+		r1 = ret.Get(1).(string)
+	}
+
+	return r0, r1
 }
 
 // WebSocketMessageHasBeenPosted provides a mock function with given fields: webConnID, userID, req

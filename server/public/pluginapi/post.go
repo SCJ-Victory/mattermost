@@ -77,6 +77,13 @@ func (p *PostService) DeletePost(postID string) error {
 	return normalizeAppErr(p.api.DeletePost(postID))
 }
 
+// PermanentDeletePost permanently deletes a post.
+//
+// Minimum server version: 5.2
+func (p *PostService) PermanentDeletePost(postID string) error {
+	return normalizeAppErr(p.api.PermanentDeletePost(postID))
+}
+
 // SendEphemeralPost creates an ephemeral post.
 //
 // Minimum server version: 5.2
