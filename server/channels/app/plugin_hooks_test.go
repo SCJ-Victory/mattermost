@@ -985,6 +985,166 @@ func TestUserHasBeenCreated(t *testing.T) {
 	require.Equal(t, "plugin-callback-success", user.Nickname)
 }
 
+func TestUserWillBeUpdated_BlockedForNonAdmin(t *testing.T) {
+	mainHelper.Parallel(t)
+	th := Setup(t, StartMetrics)
+
+	tearDown, _, _ := SetAppEnvironmentWithPlugins(t,
+		[]string{
+			`
+		package main
+
+		import (
+			"github.com/mattermost/mattermost/server/public/plugin"
+			"github.com/mattermost/mattermost/server/public/model"
+		)
+
+		type MyPlugin struct {
+			plugin.MattermostPlugin
+		}
+
+		func (p *MyPlugin) UserWillBeUpdated(c *plugin.Context, newUser, oldUser *model.User, asAdmin bool) (*model.User, string) {
+			if !asAdmin && newUser.Username != oldUser.Username {
+				return nil, "禁止修改用户名"
+			}
+			return nil, ""
+		}
+
+		func main() {
+			plugin.ClientMain(&MyPlugin{})
+		}
+	`,
+		}, th.App, th.NewPluginAPI)
+	defer tearDown()
+
+	user := th.CreateUser(t)
+	user.Username = model.NewId()
+
+	_, appErr := th.App.UpdateUserAsUser(th.Context, user, false)
+	require.NotNil(t, appErr)
+	assert.Contains(t, appErr.Id, "禁止修改用户名")
+}
+
+func TestUserWillBeUpdated_BlocksPatchUser(t *testing.T) {
+	mainHelper.Parallel(t)
+	th := Setup(t, StartMetrics)
+
+	tearDown, _, _ := SetAppEnvironmentWithPlugins(t,
+		[]string{
+			`
+		package main
+
+		import (
+			"github.com/mattermost/mattermost/server/public/plugin"
+			"github.com/mattermost/mattermost/server/public/model"
+		)
+
+		type MyPlugin struct {
+			plugin.MattermostPlugin
+		}
+
+		func (p *MyPlugin) UserWillBeUpdated(c *plugin.Context, newUser, oldUser *model.User, asAdmin bool) (*model.User, string) {
+			if newUser.Nickname != oldUser.Nickname {
+				return nil, "nickname update blocked"
+			}
+			return nil, ""
+		}
+
+		func main() {
+			plugin.ClientMain(&MyPlugin{})
+		}
+	`,
+		}, th.App, th.NewPluginAPI)
+	defer tearDown()
+
+	user := th.CreateUser(t)
+	newNickname := "patched-nickname"
+	patch := &model.UserPatch{Nickname: &newNickname}
+
+	_, appErr := th.App.PatchUser(th.Context, user.Id, patch, false)
+	require.NotNil(t, appErr)
+	assert.Contains(t, appErr.Id, "nickname update blocked")
+
+	storedUser, getErr := th.App.GetUser(user.Id)
+	require.Nil(t, getErr)
+	assert.NotEqual(t, newNickname, storedUser.Nickname)
+}
+
+func TestBeforeSearchUsers_ReturnsEmptyForShortTermNonAdmin(t *testing.T) {
+	mainHelper.Parallel(t)
+	th := Setup(t, StartMetrics).InitBasic(t)
+
+	tearDown, _, _ := SetAppEnvironmentWithPlugins(t,
+		[]string{
+			`
+		package main
+
+		import (
+			"github.com/mattermost/mattermost/server/public/plugin"
+			"github.com/mattermost/mattermost/server/public/model"
+		)
+
+		type MyPlugin struct {
+			plugin.MattermostPlugin
+		}
+
+		func (p *MyPlugin) BeforeSearchUsers(c *plugin.Context, search *model.UserSearch, options *model.UserSearchOptions, asAdmin bool) ([]*model.User, string) {
+			onlyTerm := search.TeamId == "" && search.NotInTeamId == "" && search.InChannelId == "" && search.NotInChannelId == "" && search.InGroupId == "" && search.NotInGroupId == "" && !search.WithoutTeam && !search.GroupConstrained && !search.AllowInactive && search.Role == "" && len(search.Roles) == 0 && len(search.ChannelRoles) == 0 && len(search.TeamRoles) == 0
+			if !asAdmin && onlyTerm && len(search.Term) < 6 {
+				return []*model.User{}, ""
+			}
+			return nil, ""
+		}
+
+		func main() {
+			plugin.ClientMain(&MyPlugin{})
+		}
+	`,
+		}, th.App, th.NewPluginAPI)
+	defer tearDown()
+
+	profiles, appErr := th.App.SearchUsers(th.Context, &model.UserSearch{Term: "short"}, &model.UserSearchOptions{IsAdmin: false, Limit: 100})
+	require.Nil(t, appErr)
+	require.Empty(t, profiles)
+}
+
+func TestBeforeGetUsersPage_ReturnsEmptyForNonAdminWithoutFilters(t *testing.T) {
+	mainHelper.Parallel(t)
+	th := Setup(t, StartMetrics).InitBasic(t)
+
+	tearDown, _, _ := SetAppEnvironmentWithPlugins(t,
+		[]string{
+			`
+		package main
+
+		import (
+			"github.com/mattermost/mattermost/server/public/plugin"
+			"github.com/mattermost/mattermost/server/public/model"
+		)
+
+		type MyPlugin struct {
+			plugin.MattermostPlugin
+		}
+
+		func (p *MyPlugin) BeforeGetUsersPage(options *model.UserGetOptions, asAdmin bool) ([]*model.User, string) {
+			if !asAdmin && options != nil && options.InTeamId == "" && options.NotInTeamId == "" && options.InChannelId == "" && options.NotInChannelId == "" && options.InGroupId == "" && options.NotInGroupId == "" && !options.GroupConstrained && !options.WithoutTeam && !options.Inactive && !options.Active && options.Role == "" && len(options.Roles) == 0 && len(options.ChannelRoles) == 0 && len(options.TeamRoles) == 0 && options.ViewRestrictions == nil {
+				return []*model.User{}, ""
+			}
+			return nil, ""
+		}
+
+		func main() {
+			plugin.ClientMain(&MyPlugin{})
+		}
+	`,
+		}, th.App, th.NewPluginAPI)
+	defer tearDown()
+
+	profiles, appErr := th.App.GetUsersPage(&model.UserGetOptions{}, false)
+	require.Nil(t, appErr)
+	require.Empty(t, profiles)
+}
+
 func TestErrorString(t *testing.T) {
 	mainHelper.Parallel(t)
 	th := Setup(t, StartMetrics)

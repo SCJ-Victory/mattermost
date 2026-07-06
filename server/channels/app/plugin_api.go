@@ -825,6 +825,10 @@ func (api *PluginAPI) DeletePost(postID string) *model.AppError {
 	return err
 }
 
+func (api *PluginAPI) PermanentDeletePost(postID string) *model.AppError {
+	return api.app.PermanentDeletePost(api.ctx, postID, api.id)
+}
+
 func (api *PluginAPI) GetPostThread(postID string) (*model.PostList, *model.AppError) {
 	list, appErr := api.app.GetPostThread(api.ctx, postID, model.GetPostsOptions{}, "")
 	if list != nil {

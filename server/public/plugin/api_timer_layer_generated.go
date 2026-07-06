@@ -769,6 +769,13 @@ func (api *apiTimerLayer) DeletePost(postId string) *model.AppError {
 	return _returnsA
 }
 
+func (api *apiTimerLayer) PermanentDeletePost(postId string) *model.AppError {
+	startTime := timePkg.Now()
+	_returnsA := api.apiImpl.PermanentDeletePost(postId)
+	api.recordTime(startTime, "PermanentDeletePost", _returnsA == nil)
+	return _returnsA
+}
+
 func (api *apiTimerLayer) GetPostThread(postId string) (*model.PostList, *model.AppError) {
 	startTime := timePkg.Now()
 	_returnsA, _returnsB := api.apiImpl.GetPostThread(postId)

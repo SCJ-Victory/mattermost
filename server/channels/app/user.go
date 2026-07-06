@@ -634,6 +634,19 @@ func (a *App) GetUsersFromProfiles(options *model.UserGetOptions) ([]*model.User
 }
 
 func (a *App) GetUsersPage(options *model.UserGetOptions, asAdmin bool) ([]*model.User, *model.AppError) {
+	var beforeGetUsersPage []*model.User
+	var rejectedReason string
+	a.ch.RunMultiHook(func(hooks plugin.Hooks, _ *model.Manifest) bool {
+		beforeGetUsersPage, rejectedReason = hooks.BeforeGetUsersPage(options, asAdmin)
+		return beforeGetUsersPage == nil && rejectedReason == ""
+	}, plugin.BeforeGetUsersPageID)
+	if rejectedReason != "" {
+		return nil, model.NewAppError("GetUsersPage", "Plugin rejected get users page: "+rejectedReason, nil, "", http.StatusForbidden)
+	}
+	if beforeGetUsersPage != nil {
+		return beforeGetUsersPage, nil
+	}
+
 	users, err := a.ch.srv.userService.GetUsersPage(options, asAdmin)
 	if err != nil {
 		return nil, model.NewAppError("GetUsersPage", "app.user.get_profiles.app_error", nil, "", http.StatusInternalServerError).Wrap(err)
@@ -1332,6 +1345,8 @@ func (a *App) SanitizeProfile(user *model.User, asAdmin bool) {
 }
 
 func (a *App) UpdateUserAsUser(rctx request.CTX, user *model.User, asAdmin bool) (*model.User, *model.AppError) {
+	_ = asAdmin
+
 	updatedUser, err := a.UpdateUser(rctx, user, true)
 	if err != nil {
 		return nil, err
@@ -1460,6 +1475,28 @@ func (a *App) UpdateUser(rctx request.CTX, user *model.User, sendNotifications b
 		default:
 			return nil, model.NewAppError("UpdateUser", "app.user.get.app_error", nil, "", http.StatusInternalServerError).Wrap(err)
 		}
+	}
+
+	asAdmin := false
+	if rctx.Session() != nil {
+		asAdmin = a.SessionHasPermissionTo(*rctx.Session(), model.PermissionManageSystem)
+	}
+
+	rejectedReason := ""
+	pluginContext := pluginContext(rctx)
+	a.ch.RunMultiHook(func(hooks plugin.Hooks, _ *model.Manifest) bool {
+		updatedUser, reason := hooks.UserWillBeUpdated(pluginContext, user, prev, asAdmin)
+		if reason != "" {
+			rejectedReason = reason
+			return false
+		}
+		if updatedUser != nil {
+			user = updatedUser
+		}
+		return true
+	}, plugin.UserWillBeUpdatedID)
+	if rejectedReason != "" {
+		return nil, model.NewAppError("UpdateUser", "Plugin rejected user update: "+rejectedReason, nil, "", http.StatusBadRequest)
 	}
 
 	if prev.CreateAt != user.CreateAt {
@@ -2308,6 +2345,24 @@ func (a *App) VerifyUserEmail(userID, email string) *model.AppError {
 }
 
 func (a *App) SearchUsers(rctx request.CTX, props *model.UserSearch, options *model.UserSearchOptions) ([]*model.User, *model.AppError) {
+	pluginContext := pluginContext(rctx)
+	var beforeSearchUsers []*model.User
+	var rejectedReason string
+	isAdmin := false
+	if options != nil {
+		isAdmin = options.IsAdmin
+	}
+	a.ch.RunMultiHook(func(hooks plugin.Hooks, _ *model.Manifest) bool {
+		beforeSearchUsers, rejectedReason = hooks.BeforeSearchUsers(pluginContext, props, options, isAdmin)
+		return beforeSearchUsers == nil && rejectedReason == ""
+	}, plugin.BeforeSearchUsersID)
+	if rejectedReason != "" {
+		return nil, model.NewAppError("SearchUsers", "Plugin rejected user search: "+rejectedReason, nil, "", http.StatusForbidden)
+	}
+	if beforeSearchUsers != nil {
+		return beforeSearchUsers, nil
+	}
+
 	if props.WithoutTeam {
 		return a.SearchUsersWithoutTeam(props.Term, options)
 	}
