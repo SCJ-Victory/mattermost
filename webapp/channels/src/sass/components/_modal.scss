@@ -15,6 +15,11 @@
     max-height: calc(90vh - 80px);
     padding: 4px 32px;
 
+    // introduction text in the modal body should support \n line breaks
+    > p {
+        white-space: pre-wrap;
+    }
+
     &.overflow--visible {
         overflow: visible;
     }
