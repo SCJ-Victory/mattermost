@@ -150,6 +150,20 @@ func (a *App) CreateTeamWithUser(rctx request.CTX, team *model.Team, userID stri
 		return nil, model.NewAppError("CreateTeamWithUser", "api.team.is_team_creation_allowed.domain.app_error", nil, "", http.StatusBadRequest)
 	}
 
+	var beforeCreateTeamWithUser *model.Team
+	var rejectedReason string
+	pluginCtx := pluginContext(rctx)
+	a.ch.RunMultiHook(func(hooks plugin.Hooks, _ *model.Manifest) bool {
+		beforeCreateTeamWithUser, rejectedReason = hooks.BeforeCreateTeamWithUser(pluginCtx, team, user)
+		if beforeCreateTeamWithUser != nil {
+			team = beforeCreateTeamWithUser
+		}
+		return rejectedReason == ""
+	}, plugin.BeforeCreateTeamWithUserID)
+	if rejectedReason != "" {
+		return nil, model.NewAppError("CreateTeamWithUser", "Plugin rejected create team with user: "+rejectedReason, nil, "", http.StatusForbidden)
+	}
+
 	rteam, err := a.CreateTeam(rctx, team)
 	if err != nil {
 		return nil, err
