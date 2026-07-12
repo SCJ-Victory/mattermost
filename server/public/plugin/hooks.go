@@ -71,7 +71,9 @@ const (
 	UserWillBeUpdatedID                       = 201
 	BeforeSearchUsersID                       = 202
 	BeforeGetUsersPageID                      = 203
-	TotalHooksID                              = BeforeGetUsersPageID + 1
+	BeforeCreateUserWithInviteIdID            = 204
+	BeforeCreateTeamWithUserID                = 205
+	TotalHooksID                              = BeforeCreateTeamWithUserID + 1
 )
 
 const (
@@ -426,6 +428,24 @@ type Hooks interface {
 	//
 	// Minimum server version: 11.0
 	BeforeGetUsersPage(options *model.UserGetOptions, asAdmin bool) ([]*model.User, string)
+
+	// BeforeCreateUserWithInviteId is invoked before creating a user through an invite ID.
+	//
+	// To reject the creation, return a non-empty reason string.
+	// To modify the user before creation, return the replacement, non-nil *model.User and an empty string.
+	// To allow the creation without modification, return a nil *model.User and an empty string.
+	//
+	// Minimum server version: 11.0
+	BeforeCreateUserWithInviteId(c *Context, user *model.User, inviteId string) (*model.User, string)
+
+	// BeforeCreateTeamWithUser is invoked before creating a team in the CreateTeamWithUser flow.
+	//
+	// To reject the creation, return a non-empty reason string.
+	// To modify the team before creation, return the replacement, non-nil *model.Team and an empty string.
+	// To allow the creation without modification, return a nil *model.Team and an empty string.
+	//
+	// Minimum server version: 11.0
+	BeforeCreateTeamWithUser(c *Context, team *model.Team, user *model.User) (*model.Team, string)
 
 	// ServeMetrics allows plugins to expose their own metrics endpoint through
 	// the server's metrics HTTP listener (e.g. "localhost:8067").

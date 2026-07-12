@@ -227,11 +227,25 @@ func (a *App) CreateUserWithInviteId(rctx request.CTX, user *model.User, inviteI
 		return nil, model.NewAppError("CreateUserWithInviteId", "app.team.invite_id.group_constrained.error", nil, "", http.StatusForbidden)
 	}
 
+	user.EmailVerified = false
+
+	var beforeCreateUserWithInviteID *model.User
+	var rejectedReason string
+	pluginCtx := pluginContext(rctx)
+	a.ch.RunMultiHook(func(hooks plugin.Hooks, _ *model.Manifest) bool {
+		beforeCreateUserWithInviteID, rejectedReason = hooks.BeforeCreateUserWithInviteId(pluginCtx, user, inviteId)
+		if beforeCreateUserWithInviteID != nil {
+			user = beforeCreateUserWithInviteID
+		}
+		return rejectedReason == ""
+	}, plugin.BeforeCreateUserWithInviteIdID)
+	if rejectedReason != "" {
+		return nil, model.NewAppError("CreateUserWithInviteId", "Plugin rejected create user with invite id: "+rejectedReason, nil, "", http.StatusForbidden)
+	}
+
 	if !users.CheckUserDomain(user, team.AllowedDomains) {
 		return nil, model.NewAppError("CreateUserWithInviteId", "api.team.invite_members.invalid_email.app_error", map[string]any{"Addresses": team.AllowedDomains}, "", http.StatusForbidden)
 	}
-
-	user.EmailVerified = false
 
 	ruser, err := a.CreateUser(rctx, user)
 	if err != nil {

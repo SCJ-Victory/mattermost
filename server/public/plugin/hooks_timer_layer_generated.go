@@ -303,6 +303,20 @@ func (hooks *hooksTimerLayer) BeforeGetUsersPage(options *model.UserGetOptions, 
 	return _returnsA, _returnsB
 }
 
+func (hooks *hooksTimerLayer) BeforeCreateUserWithInviteId(c *Context, user *model.User, inviteId string) (*model.User, string) {
+	startTime := timePkg.Now()
+	_returnsA, _returnsB := hooks.hooksImpl.BeforeCreateUserWithInviteId(c, user, inviteId)
+	hooks.recordTime(startTime, "BeforeCreateUserWithInviteId", true)
+	return _returnsA, _returnsB
+}
+
+func (hooks *hooksTimerLayer) BeforeCreateTeamWithUser(c *Context, team *model.Team, user *model.User) (*model.Team, string) {
+	startTime := timePkg.Now()
+	_returnsA, _returnsB := hooks.hooksImpl.BeforeCreateTeamWithUser(c, team, user)
+	hooks.recordTime(startTime, "BeforeCreateTeamWithUser", true)
+	return _returnsA, _returnsB
+}
+
 func (hooks *hooksTimerLayer) ServeMetrics(c *Context, w http.ResponseWriter, r *http.Request) {
 	startTime := timePkg.Now()
 	hooks.hooksImpl.ServeMetrics(c, w, r)
@@ -585,6 +599,20 @@ func (hooks *hooksTimerLayer) BeforeGetUsersPageWithRPCErr(options *model.UserGe
 	startTime := timePkg.Now()
 	_returnsA, _returnsB, _returnsRPCErr := hooks.hooksWithRPCErrImpl.BeforeGetUsersPageWithRPCErr(options, asAdmin)
 	hooks.recordTime(startTime, "BeforeGetUsersPageWithRPCErr", _returnsRPCErr == nil)
+	return _returnsA, _returnsB, _returnsRPCErr
+}
+
+func (hooks *hooksTimerLayer) BeforeCreateUserWithInviteIdWithRPCErr(c *Context, user *model.User, inviteId string) (*model.User, string, error) {
+	startTime := timePkg.Now()
+	_returnsA, _returnsB, _returnsRPCErr := hooks.hooksWithRPCErrImpl.BeforeCreateUserWithInviteIdWithRPCErr(c, user, inviteId)
+	hooks.recordTime(startTime, "BeforeCreateUserWithInviteIdWithRPCErr", _returnsRPCErr == nil)
+	return _returnsA, _returnsB, _returnsRPCErr
+}
+
+func (hooks *hooksTimerLayer) BeforeCreateTeamWithUserWithRPCErr(c *Context, team *model.Team, user *model.User) (*model.Team, string, error) {
+	startTime := timePkg.Now()
+	_returnsA, _returnsB, _returnsRPCErr := hooks.hooksWithRPCErrImpl.BeforeCreateTeamWithUserWithRPCErr(c, team, user)
+	hooks.recordTime(startTime, "BeforeCreateTeamWithUserWithRPCErr", _returnsRPCErr == nil)
 	return _returnsA, _returnsB, _returnsRPCErr
 }
 
