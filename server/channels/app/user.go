@@ -292,6 +292,20 @@ func (a *App) CreateUserFromSignup(rctx request.CTX, user *model.User, redirect 
 
 	user.EmailVerified = false
 
+	var beforeCreateUserFromSignup *model.User
+	var rejectedReason string
+	pluginCtx := pluginContext(rctx)
+	a.ch.RunMultiHook(func(hooks plugin.Hooks, _ *model.Manifest) bool {
+		beforeCreateUserFromSignup, rejectedReason = hooks.BeforeCreateUserFromSignup(pluginCtx, user)
+		if beforeCreateUserFromSignup != nil {
+			user = beforeCreateUserFromSignup
+		}
+		return rejectedReason == ""
+	}, plugin.BeforeCreateUserFromSignupID)
+	if rejectedReason != "" {
+		return nil, model.NewAppError("CreateUserFromSignup", "Plugin rejected create user from signup: "+rejectedReason, nil, "", http.StatusForbidden)
+	}
+
 	ruser, err := a.CreateUser(rctx, user)
 	if err != nil {
 		return nil, err

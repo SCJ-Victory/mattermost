@@ -977,26 +977,6 @@ func (_m *API) DeletePost(postId string) *model.AppError {
 	return r0
 }
 
-// PermanentDeletePost provides a mock function with given fields: postId
-func (_m *API) PermanentDeletePost(postId string) *model.AppError {
-	ret := _m.Called(postId)
-
-	if len(ret) == 0 {
-		panic("no return value specified for PermanentDeletePost")
-	}
-
-	var r0 *model.AppError
-	if rf, ok := ret.Get(0).(func(string) *model.AppError); ok {
-		r0 = rf(postId)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*model.AppError)
-		}
-	}
-
-	return r0
-}
-
 // DeletePreferencesForUser provides a mock function with given fields: userID, preferences
 func (_m *API) DeletePreferencesForUser(userID string, preferences []model.Preference) *model.AppError {
 	ret := _m.Called(userID, preferences)
@@ -4513,6 +4493,26 @@ func (_m *API) PermanentDeleteBot(botUserId string) *model.AppError {
 	var r0 *model.AppError
 	if rf, ok := ret.Get(0).(func(string) *model.AppError); ok {
 		r0 = rf(botUserId)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*model.AppError)
+		}
+	}
+
+	return r0
+}
+
+// PermanentDeletePost provides a mock function with given fields: postId
+func (_m *API) PermanentDeletePost(postId string) *model.AppError {
+	ret := _m.Called(postId)
+
+	if len(ret) == 0 {
+		panic("no return value specified for PermanentDeletePost")
+	}
+
+	var r0 *model.AppError
+	if rf, ok := ret.Get(0).(func(string) *model.AppError); ok {
+		r0 = rf(postId)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*model.AppError)

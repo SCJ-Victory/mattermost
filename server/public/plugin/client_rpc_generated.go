@@ -1817,6 +1817,60 @@ func (s *hooksRPCServer) BeforeCreateUserWithInviteId(args *Z_BeforeCreateUserWi
 }
 
 func init() {
+	hookNameToId["BeforeCreateUserFromSignup"] = BeforeCreateUserFromSignupID
+}
+
+type Z_BeforeCreateUserFromSignupArgs struct {
+	A *Context
+	B *model.User
+}
+
+type Z_BeforeCreateUserFromSignupReturns struct {
+	A *model.User
+	B string
+}
+
+func (g *hooksRPCClient) BeforeCreateUserFromSignup(c *Context, user *model.User) (*model.User, string) {
+	_args := &Z_BeforeCreateUserFromSignupArgs{c, user}
+	_returns := &Z_BeforeCreateUserFromSignupReturns{}
+	if g.implemented[BeforeCreateUserFromSignupID] {
+		if err := g.client.Call("Plugin.BeforeCreateUserFromSignup", _args, _returns); err != nil {
+			g.log.Error("RPC call BeforeCreateUserFromSignup to plugin failed.", mlog.Err(err))
+		}
+	}
+	return _returns.A, _returns.B
+}
+
+// BeforeCreateUserFromSignupWithRPCErr returns the same values as BeforeCreateUserFromSignup, with an additional trailing error
+// for the RPC transport — always the LAST return slot.
+func (g *hooksRPCClient) BeforeCreateUserFromSignupWithRPCErr(c *Context, user *model.User) (*model.User, string, error) {
+	_args := &Z_BeforeCreateUserFromSignupArgs{c, user}
+	_returns := &Z_BeforeCreateUserFromSignupReturns{}
+	var _err error
+	if g.implemented[BeforeCreateUserFromSignupID] {
+		_err = g.client.Call("Plugin.BeforeCreateUserFromSignup", _args, _returns)
+		if _err != nil {
+			// Reset _returns so partial gob decoding can't leak non-zero
+			// values past a transport failure (HooksWithRPCErr contract).
+			_returns = &Z_BeforeCreateUserFromSignupReturns{}
+			g.log.Debug("RPC call BeforeCreateUserFromSignup to plugin failed.", mlog.Err(_err))
+		}
+	}
+	return _returns.A, _returns.B, _err
+}
+
+func (s *hooksRPCServer) BeforeCreateUserFromSignup(args *Z_BeforeCreateUserFromSignupArgs, returns *Z_BeforeCreateUserFromSignupReturns) error {
+	if hook, ok := s.impl.(interface {
+		BeforeCreateUserFromSignup(c *Context, user *model.User) (*model.User, string)
+	}); ok {
+		returns.A, returns.B = hook.BeforeCreateUserFromSignup(args.A, args.B)
+	} else {
+		return encodableError(fmt.Errorf("Hook BeforeCreateUserFromSignup called but not implemented."))
+	}
+	return nil
+}
+
+func init() {
 	hookNameToId["BeforeCreateTeamWithUser"] = BeforeCreateTeamWithUserID
 }
 
@@ -2326,6 +2380,8 @@ type HooksWithRPCErr interface {
 	BeforeGetUsersPageWithRPCErr(options *model.UserGetOptions, asAdmin bool) ([]*model.User, string, error)
 
 	BeforeCreateUserWithInviteIdWithRPCErr(c *Context, user *model.User, inviteId string) (*model.User, string, error)
+
+	BeforeCreateUserFromSignupWithRPCErr(c *Context, user *model.User) (*model.User, string, error)
 
 	BeforeCreateTeamWithUserWithRPCErr(c *Context, team *model.Team, user *model.User) (*model.Team, string, error)
 
