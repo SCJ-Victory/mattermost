@@ -73,7 +73,8 @@ const (
 	BeforeGetUsersPageID                      = 203
 	BeforeCreateUserWithInviteIdID            = 204
 	BeforeCreateTeamWithUserID                = 205
-	TotalHooksID                              = BeforeCreateTeamWithUserID + 1
+	BeforeCreateUserFromSignupID              = 206
+	TotalHooksID                              = BeforeCreateUserFromSignupID + 1
 )
 
 const (
@@ -437,6 +438,15 @@ type Hooks interface {
 	//
 	// Minimum server version: 11.0
 	BeforeCreateUserWithInviteId(c *Context, user *model.User, inviteId string) (*model.User, string)
+
+	// BeforeCreateUserFromSignup is invoked before creating a user through open signup.
+	//
+	// To reject the creation, return a non-empty reason string.
+	// To modify the user before creation, return the replacement, non-nil *model.User and an empty string.
+	// To allow the creation without modification, return a nil *model.User and an empty string.
+	//
+	// Minimum server version: 11.0
+	BeforeCreateUserFromSignup(c *Context, user *model.User) (*model.User, string)
 
 	// BeforeCreateTeamWithUser is invoked before creating a team in the CreateTeamWithUser flow.
 	//

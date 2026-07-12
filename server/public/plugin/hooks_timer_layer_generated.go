@@ -310,6 +310,13 @@ func (hooks *hooksTimerLayer) BeforeCreateUserWithInviteId(c *Context, user *mod
 	return _returnsA, _returnsB
 }
 
+func (hooks *hooksTimerLayer) BeforeCreateUserFromSignup(c *Context, user *model.User) (*model.User, string) {
+	startTime := timePkg.Now()
+	_returnsA, _returnsB := hooks.hooksImpl.BeforeCreateUserFromSignup(c, user)
+	hooks.recordTime(startTime, "BeforeCreateUserFromSignup", true)
+	return _returnsA, _returnsB
+}
+
 func (hooks *hooksTimerLayer) BeforeCreateTeamWithUser(c *Context, team *model.Team, user *model.User) (*model.Team, string) {
 	startTime := timePkg.Now()
 	_returnsA, _returnsB := hooks.hooksImpl.BeforeCreateTeamWithUser(c, team, user)
@@ -606,6 +613,13 @@ func (hooks *hooksTimerLayer) BeforeCreateUserWithInviteIdWithRPCErr(c *Context,
 	startTime := timePkg.Now()
 	_returnsA, _returnsB, _returnsRPCErr := hooks.hooksWithRPCErrImpl.BeforeCreateUserWithInviteIdWithRPCErr(c, user, inviteId)
 	hooks.recordTime(startTime, "BeforeCreateUserWithInviteIdWithRPCErr", _returnsRPCErr == nil)
+	return _returnsA, _returnsB, _returnsRPCErr
+}
+
+func (hooks *hooksTimerLayer) BeforeCreateUserFromSignupWithRPCErr(c *Context, user *model.User) (*model.User, string, error) {
+	startTime := timePkg.Now()
+	_returnsA, _returnsB, _returnsRPCErr := hooks.hooksWithRPCErrImpl.BeforeCreateUserFromSignupWithRPCErr(c, user)
+	hooks.recordTime(startTime, "BeforeCreateUserFromSignupWithRPCErr", _returnsRPCErr == nil)
 	return _returnsA, _returnsB, _returnsRPCErr
 }
 
