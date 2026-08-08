@@ -4556,6 +4556,26 @@ func (_m *API) PermanentDeleteBot(botUserId string) *model.AppError {
 	return r0
 }
 
+// PermanentDeletePost provides a mock function with given fields: postId
+func (_m *API) PermanentDeletePost(postId string) *model.AppError {
+	ret := _m.Called(postId)
+
+	if len(ret) == 0 {
+		panic("no return value specified for PermanentDeletePost")
+	}
+
+	var r0 *model.AppError
+	if rf, ok := ret.Get(0).(func(string) *model.AppError); ok {
+		r0 = rf(postId)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*model.AppError)
+		}
+	}
+
+	return r0
+}
+
 // PluginHTTP provides a mock function with given fields: request
 func (_m *API) PluginHTTP(request *http.Request) *http.Response {
 	ret := _m.Called(request)

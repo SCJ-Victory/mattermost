@@ -244,11 +244,25 @@ func (a *App) CreateUserWithInviteId(rctx request.CTX, user *model.User, inviteI
 		return nil, model.NewAppError("CreateUserWithInviteId", "app.team.invite_id.group_constrained.error", nil, "", http.StatusForbidden)
 	}
 
+	user.EmailVerified = false
+
+	var beforeCreateUserWithInviteID *model.User
+	var rejectedReason string
+	pluginCtx := pluginContext(rctx)
+	a.ch.RunMultiHook(func(hooks plugin.Hooks, _ *model.Manifest) bool {
+		beforeCreateUserWithInviteID, rejectedReason = hooks.BeforeCreateUserWithInviteId(pluginCtx, user, inviteId)
+		if beforeCreateUserWithInviteID != nil {
+			user = beforeCreateUserWithInviteID
+		}
+		return rejectedReason == ""
+	}, plugin.BeforeCreateUserWithInviteIdID)
+	if rejectedReason != "" {
+		return nil, model.NewAppError("CreateUserWithInviteId", "Plugin rejected create user with invite id: "+rejectedReason, nil, "", http.StatusForbidden)
+	}
+
 	if !users.CheckUserDomain(user, team.AllowedDomains) {
 		return nil, model.NewAppError("CreateUserWithInviteId", "api.team.invite_members.invalid_email.app_error", map[string]any{"Addresses": team.AllowedDomains}, "", http.StatusForbidden)
 	}
-
-	user.EmailVerified = false
 
 	ruser, err := a.CreateUser(rctx, user)
 	if err != nil {
@@ -294,6 +308,20 @@ func (a *App) CreateUserFromSignup(rctx request.CTX, user *model.User, redirect 
 	}
 
 	user.EmailVerified = false
+
+	var beforeCreateUserFromSignup *model.User
+	var rejectedReason string
+	pluginCtx := pluginContext(rctx)
+	a.ch.RunMultiHook(func(hooks plugin.Hooks, _ *model.Manifest) bool {
+		beforeCreateUserFromSignup, rejectedReason = hooks.BeforeCreateUserFromSignup(pluginCtx, user)
+		if beforeCreateUserFromSignup != nil {
+			user = beforeCreateUserFromSignup
+		}
+		return rejectedReason == ""
+	}, plugin.BeforeCreateUserFromSignupID)
+	if rejectedReason != "" {
+		return nil, model.NewAppError("CreateUserFromSignup", "Plugin rejected create user from signup: "+rejectedReason, nil, "", http.StatusForbidden)
+	}
 
 	ruser, err := a.CreateUser(rctx, user)
 	if err != nil {
@@ -651,6 +679,19 @@ func (a *App) GetUsersFromProfiles(options *model.UserGetOptions) ([]*model.User
 }
 
 func (a *App) GetUsersPage(options *model.UserGetOptions, asAdmin bool) ([]*model.User, *model.AppError) {
+	var beforeGetUsersPage []*model.User
+	var rejectedReason string
+	a.ch.RunMultiHook(func(hooks plugin.Hooks, _ *model.Manifest) bool {
+		beforeGetUsersPage, rejectedReason = hooks.BeforeGetUsersPage(options, asAdmin)
+		return beforeGetUsersPage == nil && rejectedReason == ""
+	}, plugin.BeforeGetUsersPageID)
+	if rejectedReason != "" {
+		return nil, model.NewAppError("GetUsersPage", "Plugin rejected get users page: "+rejectedReason, nil, "", http.StatusForbidden)
+	}
+	if beforeGetUsersPage != nil {
+		return beforeGetUsersPage, nil
+	}
+
 	users, err := a.ch.srv.userService.GetUsersPage(options, asAdmin)
 	if err != nil {
 		return nil, model.NewAppError("GetUsersPage", "app.user.get_profiles.app_error", nil, "", http.StatusInternalServerError).Wrap(err)
@@ -1563,6 +1604,28 @@ func (a *App) UpdateUser(rctx request.CTX, user *model.User, sendNotifications b
 		}
 	}
 
+	asAdmin := false
+	if rctx.Session() != nil {
+		asAdmin = a.SessionHasPermissionTo(*rctx.Session(), model.PermissionManageSystem)
+	}
+
+	rejectedReason := ""
+	pluginContext := pluginContext(rctx)
+	a.ch.RunMultiHook(func(hooks plugin.Hooks, _ *model.Manifest) bool {
+		updatedUser, reason := hooks.UserWillBeUpdated(pluginContext, user, prev, asAdmin)
+		if reason != "" {
+			rejectedReason = reason
+			return false
+		}
+		if updatedUser != nil {
+			user = updatedUser
+		}
+		return true
+	}, plugin.UserWillBeUpdatedID)
+	if rejectedReason != "" {
+		return nil, model.NewAppError("UpdateUser", "Plugin rejected user update: "+rejectedReason, nil, "", http.StatusBadRequest)
+	}
+
 	if prev.CreateAt != user.CreateAt {
 		user.CreateAt = prev.CreateAt
 	}
@@ -2409,6 +2472,24 @@ func (a *App) VerifyUserEmail(userID, email string) *model.AppError {
 }
 
 func (a *App) SearchUsers(rctx request.CTX, props *model.UserSearch, options *model.UserSearchOptions) ([]*model.User, *model.AppError) {
+	pluginContext := pluginContext(rctx)
+	var beforeSearchUsers []*model.User
+	var rejectedReason string
+	isAdmin := false
+	if options != nil {
+		isAdmin = options.IsAdmin
+	}
+	a.ch.RunMultiHook(func(hooks plugin.Hooks, _ *model.Manifest) bool {
+		beforeSearchUsers, rejectedReason = hooks.BeforeSearchUsers(pluginContext, props, options, isAdmin)
+		return beforeSearchUsers == nil && rejectedReason == ""
+	}, plugin.BeforeSearchUsersID)
+	if rejectedReason != "" {
+		return nil, model.NewAppError("SearchUsers", "Plugin rejected user search: "+rejectedReason, nil, "", http.StatusForbidden)
+	}
+	if beforeSearchUsers != nil {
+		return beforeSearchUsers, nil
+	}
+
 	if props.WithoutTeam {
 		return a.SearchUsersWithoutTeam(props.Term, options)
 	}

@@ -74,6 +74,12 @@ const (
 	ScheduledPostWillBeCreatedID              = 54
 	DraftWillBeUpsertedID                     = 55
 	MessagesWillBeConsumedWithContextID       = 56
+	UserWillBeUpdatedID                       = 57
+	BeforeSearchUsersID                       = 58
+	BeforeGetUsersPageID                      = 59
+	BeforeCreateUserWithInviteIdID            = 60
+	BeforeCreateTeamWithUserID                = 61
+	BeforeCreateUserFromSignupID              = 62
 	TotalHooksID                              = iota
 )
 
@@ -134,6 +140,15 @@ type Hooks interface {
 	//
 	// Minimum server version: 5.10
 	UserHasBeenCreated(c *Context, user *model.User)
+
+	// UserWillBeUpdated is invoked before a user is updated.
+	//
+	// To reject the update, return a non-empty string describing why the update was rejected.
+	// To modify the user, return the replacement, non-nil *model.User and an empty string.
+	// To allow the update without modification, return a nil *model.User and an empty string.
+	//
+	// Minimum server version: 11.0
+	UserWillBeUpdated(c *Context, newUser, oldUser *model.User, asAdmin bool) (*model.User, string)
 
 	// UserWillLogIn before the login of the user is returned. Returning a non empty string will reject the login event.
 	// If you don't need to reject the login event, see UserHasLoggedIn
@@ -412,6 +427,53 @@ type Hooks interface {
 	//
 	// Minimum server version: 9.1
 	UserHasBeenDeactivated(c *Context, user *model.User)
+
+	// BeforeSearchUsers is invoked before users are searched.
+	//
+	// To reject the search, return a non-empty reason string.
+	// To short-circuit the search, return a non-nil slice of users. Returning an empty slice will
+	// skip the search and return no results.
+	// To allow the search to continue, return nil users and an empty reason.
+	//
+	// Minimum server version: 11.0
+	BeforeSearchUsers(c *Context, search *model.UserSearch, options *model.UserSearchOptions, asAdmin bool) ([]*model.User, string)
+
+	// BeforeGetUsersPage is invoked before paginated users are fetched.
+	//
+	// To reject the query, return a non-empty reason string.
+	// To short-circuit the query, return a non-nil slice of users. Returning an empty slice will
+	// skip the query and return no results.
+	// To allow the query to continue, return nil users and an empty reason.
+	//
+	// Minimum server version: 11.0
+	BeforeGetUsersPage(options *model.UserGetOptions, asAdmin bool) ([]*model.User, string)
+
+	// BeforeCreateUserWithInviteId is invoked before creating a user through an invite ID.
+	//
+	// To reject the creation, return a non-empty reason string.
+	// To modify the user before creation, return the replacement, non-nil *model.User and an empty string.
+	// To allow the creation without modification, return a nil *model.User and an empty string.
+	//
+	// Minimum server version: 11.0
+	BeforeCreateUserWithInviteId(c *Context, user *model.User, inviteId string) (*model.User, string)
+
+	// BeforeCreateUserFromSignup is invoked before creating a user through open signup.
+	//
+	// To reject the creation, return a non-empty reason string.
+	// To modify the user before creation, return the replacement, non-nil *model.User and an empty string.
+	// To allow the creation without modification, return a nil *model.User and an empty string.
+	//
+	// Minimum server version: 11.0
+	BeforeCreateUserFromSignup(c *Context, user *model.User) (*model.User, string)
+
+	// BeforeCreateTeamWithUser is invoked before creating a team in the CreateTeamWithUser flow.
+	//
+	// To reject the creation, return a non-empty reason string.
+	// To modify the team before creation, return the replacement, non-nil *model.Team and an empty string.
+	// To allow the creation without modification, return a nil *model.Team and an empty string.
+	//
+	// Minimum server version: 11.0
+	BeforeCreateTeamWithUser(c *Context, team *model.Team, user *model.User) (*model.Team, string)
 
 	// ServeMetrics allows plugins to expose their own metrics endpoint through
 	// the server's metrics HTTP listener (e.g. "localhost:8067").

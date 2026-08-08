@@ -19,6 +19,156 @@ type Hooks struct {
 	mock.Mock
 }
 
+// BeforeCreateTeamWithUser provides a mock function with given fields: c, team, user
+func (_m *Hooks) BeforeCreateTeamWithUser(c *plugin.Context, team *model.Team, user *model.User) (*model.Team, string) {
+	ret := _m.Called(c, team, user)
+
+	if len(ret) == 0 {
+		panic("no return value specified for BeforeCreateTeamWithUser")
+	}
+
+	var r0 *model.Team
+	var r1 string
+	if rf, ok := ret.Get(0).(func(*plugin.Context, *model.Team, *model.User) (*model.Team, string)); ok {
+		return rf(c, team, user)
+	}
+	if rf, ok := ret.Get(0).(func(*plugin.Context, *model.Team, *model.User) *model.Team); ok {
+		r0 = rf(c, team, user)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*model.Team)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(*plugin.Context, *model.Team, *model.User) string); ok {
+		r1 = rf(c, team, user)
+	} else {
+		r1 = ret.Get(1).(string)
+	}
+
+	return r0, r1
+}
+
+// BeforeCreateUserFromSignup provides a mock function with given fields: c, user
+func (_m *Hooks) BeforeCreateUserFromSignup(c *plugin.Context, user *model.User) (*model.User, string) {
+	ret := _m.Called(c, user)
+
+	if len(ret) == 0 {
+		panic("no return value specified for BeforeCreateUserFromSignup")
+	}
+
+	var r0 *model.User
+	var r1 string
+	if rf, ok := ret.Get(0).(func(*plugin.Context, *model.User) (*model.User, string)); ok {
+		return rf(c, user)
+	}
+	if rf, ok := ret.Get(0).(func(*plugin.Context, *model.User) *model.User); ok {
+		r0 = rf(c, user)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*model.User)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(*plugin.Context, *model.User) string); ok {
+		r1 = rf(c, user)
+	} else {
+		r1 = ret.Get(1).(string)
+	}
+
+	return r0, r1
+}
+
+// BeforeCreateUserWithInviteId provides a mock function with given fields: c, user, inviteId
+func (_m *Hooks) BeforeCreateUserWithInviteId(c *plugin.Context, user *model.User, inviteId string) (*model.User, string) {
+	ret := _m.Called(c, user, inviteId)
+
+	if len(ret) == 0 {
+		panic("no return value specified for BeforeCreateUserWithInviteId")
+	}
+
+	var r0 *model.User
+	var r1 string
+	if rf, ok := ret.Get(0).(func(*plugin.Context, *model.User, string) (*model.User, string)); ok {
+		return rf(c, user, inviteId)
+	}
+	if rf, ok := ret.Get(0).(func(*plugin.Context, *model.User, string) *model.User); ok {
+		r0 = rf(c, user, inviteId)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*model.User)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(*plugin.Context, *model.User, string) string); ok {
+		r1 = rf(c, user, inviteId)
+	} else {
+		r1 = ret.Get(1).(string)
+	}
+
+	return r0, r1
+}
+
+// BeforeGetUsersPage provides a mock function with given fields: options, asAdmin
+func (_m *Hooks) BeforeGetUsersPage(options *model.UserGetOptions, asAdmin bool) ([]*model.User, string) {
+	ret := _m.Called(options, asAdmin)
+
+	if len(ret) == 0 {
+		panic("no return value specified for BeforeGetUsersPage")
+	}
+
+	var r0 []*model.User
+	var r1 string
+	if rf, ok := ret.Get(0).(func(*model.UserGetOptions, bool) ([]*model.User, string)); ok {
+		return rf(options, asAdmin)
+	}
+	if rf, ok := ret.Get(0).(func(*model.UserGetOptions, bool) []*model.User); ok {
+		r0 = rf(options, asAdmin)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]*model.User)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(*model.UserGetOptions, bool) string); ok {
+		r1 = rf(options, asAdmin)
+	} else {
+		r1 = ret.Get(1).(string)
+	}
+
+	return r0, r1
+}
+
+// BeforeSearchUsers provides a mock function with given fields: c, search, options, asAdmin
+func (_m *Hooks) BeforeSearchUsers(c *plugin.Context, search *model.UserSearch, options *model.UserSearchOptions, asAdmin bool) ([]*model.User, string) {
+	ret := _m.Called(c, search, options, asAdmin)
+
+	if len(ret) == 0 {
+		panic("no return value specified for BeforeSearchUsers")
+	}
+
+	var r0 []*model.User
+	var r1 string
+	if rf, ok := ret.Get(0).(func(*plugin.Context, *model.UserSearch, *model.UserSearchOptions, bool) ([]*model.User, string)); ok {
+		return rf(c, search, options, asAdmin)
+	}
+	if rf, ok := ret.Get(0).(func(*plugin.Context, *model.UserSearch, *model.UserSearchOptions, bool) []*model.User); ok {
+		r0 = rf(c, search, options, asAdmin)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]*model.User)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(*plugin.Context, *model.UserSearch, *model.UserSearchOptions, bool) string); ok {
+		r1 = rf(c, search, options, asAdmin)
+	} else {
+		r1 = ret.Get(1).(string)
+	}
+
+	return r0, r1
+}
+
 // ChannelHasBeenCreated provides a mock function with given fields: c, channel
 func (_m *Hooks) ChannelHasBeenCreated(c *plugin.Context, channel *model.Channel) {
 	_m.Called(c, channel)
@@ -838,6 +988,36 @@ func (_m *Hooks) UserHasLeftTeam(c *plugin.Context, teamMember *model.TeamMember
 // UserHasLoggedIn provides a mock function with given fields: c, user
 func (_m *Hooks) UserHasLoggedIn(c *plugin.Context, user *model.User) {
 	_m.Called(c, user)
+}
+
+// UserWillBeUpdated provides a mock function with given fields: c, newUser, oldUser, asAdmin
+func (_m *Hooks) UserWillBeUpdated(c *plugin.Context, newUser *model.User, oldUser *model.User, asAdmin bool) (*model.User, string) {
+	ret := _m.Called(c, newUser, oldUser, asAdmin)
+
+	if len(ret) == 0 {
+		panic("no return value specified for UserWillBeUpdated")
+	}
+
+	var r0 *model.User
+	var r1 string
+	if rf, ok := ret.Get(0).(func(*plugin.Context, *model.User, *model.User, bool) (*model.User, string)); ok {
+		return rf(c, newUser, oldUser, asAdmin)
+	}
+	if rf, ok := ret.Get(0).(func(*plugin.Context, *model.User, *model.User, bool) *model.User); ok {
+		r0 = rf(c, newUser, oldUser, asAdmin)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*model.User)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(*plugin.Context, *model.User, *model.User, bool) string); ok {
+		r1 = rf(c, newUser, oldUser, asAdmin)
+	} else {
+		r1 = ret.Get(1).(string)
+	}
+
+	return r0, r1
 }
 
 // UserWillLogIn provides a mock function with given fields: c, user

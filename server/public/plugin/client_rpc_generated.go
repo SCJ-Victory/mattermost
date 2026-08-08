@@ -226,6 +226,62 @@ func (s *hooksRPCServer) UserHasBeenCreated(args *Z_UserHasBeenCreatedArgs, retu
 }
 
 func init() {
+	hookNameToId["UserWillBeUpdated"] = UserWillBeUpdatedID
+}
+
+type Z_UserWillBeUpdatedArgs struct {
+	A *Context
+	B *model.User
+	C *model.User
+	D bool
+}
+
+type Z_UserWillBeUpdatedReturns struct {
+	A *model.User
+	B string
+}
+
+func (g *hooksRPCClient) UserWillBeUpdated(c *Context, newUser, oldUser *model.User, asAdmin bool) (*model.User, string) {
+	_args := &Z_UserWillBeUpdatedArgs{c, newUser, oldUser, asAdmin}
+	_returns := &Z_UserWillBeUpdatedReturns{}
+	if g.implemented[UserWillBeUpdatedID] {
+		if err := g.client.Call("Plugin.UserWillBeUpdated", _args, _returns); err != nil {
+			g.log.Error("RPC call UserWillBeUpdated to plugin failed.", mlog.Err(err))
+		}
+	}
+	return _returns.A, _returns.B
+}
+
+// UserWillBeUpdatedWithRPCErr returns the same values as UserWillBeUpdated, with an additional trailing error
+// for the RPC transport — always the LAST return slot.
+func (g *hooksRPCClient) UserWillBeUpdatedWithRPCErr(c *Context, newUser, oldUser *model.User, asAdmin bool) (*model.User, string, error) {
+	_args := &Z_UserWillBeUpdatedArgs{c, newUser, oldUser, asAdmin}
+	_returns := &Z_UserWillBeUpdatedReturns{}
+	var _err error
+	if g.implemented[UserWillBeUpdatedID] {
+		_err = g.client.Call("Plugin.UserWillBeUpdated", _args, _returns)
+		if _err != nil {
+			// Reset _returns so partial gob decoding can't leak non-zero
+			// values past a transport failure (HooksWithRPCErr contract).
+			_returns = &Z_UserWillBeUpdatedReturns{}
+			g.log.Debug("RPC call UserWillBeUpdated to plugin failed.", mlog.Err(_err))
+		}
+	}
+	return _returns.A, _returns.B, _err
+}
+
+func (s *hooksRPCServer) UserWillBeUpdated(args *Z_UserWillBeUpdatedArgs, returns *Z_UserWillBeUpdatedReturns) error {
+	if hook, ok := s.impl.(interface {
+		UserWillBeUpdated(c *Context, newUser, oldUser *model.User, asAdmin bool) (*model.User, string)
+	}); ok {
+		returns.A, returns.B = hook.UserWillBeUpdated(args.A, args.B, args.C, args.D)
+	} else {
+		return encodableError(fmt.Errorf("Hook UserWillBeUpdated called but not implemented."))
+	}
+	return nil
+}
+
+func init() {
 	hookNameToId["UserWillLogIn"] = UserWillLogInID
 }
 
@@ -1596,6 +1652,280 @@ func (s *hooksRPCServer) UserHasBeenDeactivated(args *Z_UserHasBeenDeactivatedAr
 }
 
 func init() {
+	hookNameToId["BeforeSearchUsers"] = BeforeSearchUsersID
+}
+
+type Z_BeforeSearchUsersArgs struct {
+	A *Context
+	B *model.UserSearch
+	C *model.UserSearchOptions
+	D bool
+}
+
+type Z_BeforeSearchUsersReturns struct {
+	A []*model.User
+	B string
+}
+
+func (g *hooksRPCClient) BeforeSearchUsers(c *Context, search *model.UserSearch, options *model.UserSearchOptions, asAdmin bool) ([]*model.User, string) {
+	_args := &Z_BeforeSearchUsersArgs{c, search, options, asAdmin}
+	_returns := &Z_BeforeSearchUsersReturns{}
+	if g.implemented[BeforeSearchUsersID] {
+		if err := g.client.Call("Plugin.BeforeSearchUsers", _args, _returns); err != nil {
+			g.log.Error("RPC call BeforeSearchUsers to plugin failed.", mlog.Err(err))
+		}
+	}
+	return _returns.A, _returns.B
+}
+
+// BeforeSearchUsersWithRPCErr returns the same values as BeforeSearchUsers, with an additional trailing error
+// for the RPC transport — always the LAST return slot.
+func (g *hooksRPCClient) BeforeSearchUsersWithRPCErr(c *Context, search *model.UserSearch, options *model.UserSearchOptions, asAdmin bool) ([]*model.User, string, error) {
+	_args := &Z_BeforeSearchUsersArgs{c, search, options, asAdmin}
+	_returns := &Z_BeforeSearchUsersReturns{}
+	var _err error
+	if g.implemented[BeforeSearchUsersID] {
+		_err = g.client.Call("Plugin.BeforeSearchUsers", _args, _returns)
+		if _err != nil {
+			// Reset _returns so partial gob decoding can't leak non-zero
+			// values past a transport failure (HooksWithRPCErr contract).
+			_returns = &Z_BeforeSearchUsersReturns{}
+			g.log.Debug("RPC call BeforeSearchUsers to plugin failed.", mlog.Err(_err))
+		}
+	}
+	return _returns.A, _returns.B, _err
+}
+
+func (s *hooksRPCServer) BeforeSearchUsers(args *Z_BeforeSearchUsersArgs, returns *Z_BeforeSearchUsersReturns) error {
+	if hook, ok := s.impl.(interface {
+		BeforeSearchUsers(c *Context, search *model.UserSearch, options *model.UserSearchOptions, asAdmin bool) ([]*model.User, string)
+	}); ok {
+		returns.A, returns.B = hook.BeforeSearchUsers(args.A, args.B, args.C, args.D)
+	} else {
+		return encodableError(fmt.Errorf("Hook BeforeSearchUsers called but not implemented."))
+	}
+	return nil
+}
+
+func init() {
+	hookNameToId["BeforeGetUsersPage"] = BeforeGetUsersPageID
+}
+
+type Z_BeforeGetUsersPageArgs struct {
+	A *model.UserGetOptions
+	B bool
+}
+
+type Z_BeforeGetUsersPageReturns struct {
+	A []*model.User
+	B string
+}
+
+func (g *hooksRPCClient) BeforeGetUsersPage(options *model.UserGetOptions, asAdmin bool) ([]*model.User, string) {
+	_args := &Z_BeforeGetUsersPageArgs{options, asAdmin}
+	_returns := &Z_BeforeGetUsersPageReturns{}
+	if g.implemented[BeforeGetUsersPageID] {
+		if err := g.client.Call("Plugin.BeforeGetUsersPage", _args, _returns); err != nil {
+			g.log.Error("RPC call BeforeGetUsersPage to plugin failed.", mlog.Err(err))
+		}
+	}
+	return _returns.A, _returns.B
+}
+
+// BeforeGetUsersPageWithRPCErr returns the same values as BeforeGetUsersPage, with an additional trailing error
+// for the RPC transport — always the LAST return slot.
+func (g *hooksRPCClient) BeforeGetUsersPageWithRPCErr(options *model.UserGetOptions, asAdmin bool) ([]*model.User, string, error) {
+	_args := &Z_BeforeGetUsersPageArgs{options, asAdmin}
+	_returns := &Z_BeforeGetUsersPageReturns{}
+	var _err error
+	if g.implemented[BeforeGetUsersPageID] {
+		_err = g.client.Call("Plugin.BeforeGetUsersPage", _args, _returns)
+		if _err != nil {
+			// Reset _returns so partial gob decoding can't leak non-zero
+			// values past a transport failure (HooksWithRPCErr contract).
+			_returns = &Z_BeforeGetUsersPageReturns{}
+			g.log.Debug("RPC call BeforeGetUsersPage to plugin failed.", mlog.Err(_err))
+		}
+	}
+	return _returns.A, _returns.B, _err
+}
+
+func (s *hooksRPCServer) BeforeGetUsersPage(args *Z_BeforeGetUsersPageArgs, returns *Z_BeforeGetUsersPageReturns) error {
+	if hook, ok := s.impl.(interface {
+		BeforeGetUsersPage(options *model.UserGetOptions, asAdmin bool) ([]*model.User, string)
+	}); ok {
+		returns.A, returns.B = hook.BeforeGetUsersPage(args.A, args.B)
+	} else {
+		return encodableError(fmt.Errorf("Hook BeforeGetUsersPage called but not implemented."))
+	}
+	return nil
+}
+
+func init() {
+	hookNameToId["BeforeCreateUserWithInviteId"] = BeforeCreateUserWithInviteIdID
+}
+
+type Z_BeforeCreateUserWithInviteIdArgs struct {
+	A *Context
+	B *model.User
+	C string
+}
+
+type Z_BeforeCreateUserWithInviteIdReturns struct {
+	A *model.User
+	B string
+}
+
+func (g *hooksRPCClient) BeforeCreateUserWithInviteId(c *Context, user *model.User, inviteId string) (*model.User, string) {
+	_args := &Z_BeforeCreateUserWithInviteIdArgs{c, user, inviteId}
+	_returns := &Z_BeforeCreateUserWithInviteIdReturns{}
+	if g.implemented[BeforeCreateUserWithInviteIdID] {
+		if err := g.client.Call("Plugin.BeforeCreateUserWithInviteId", _args, _returns); err != nil {
+			g.log.Error("RPC call BeforeCreateUserWithInviteId to plugin failed.", mlog.Err(err))
+		}
+	}
+	return _returns.A, _returns.B
+}
+
+// BeforeCreateUserWithInviteIdWithRPCErr returns the same values as BeforeCreateUserWithInviteId, with an additional trailing error
+// for the RPC transport — always the LAST return slot.
+func (g *hooksRPCClient) BeforeCreateUserWithInviteIdWithRPCErr(c *Context, user *model.User, inviteId string) (*model.User, string, error) {
+	_args := &Z_BeforeCreateUserWithInviteIdArgs{c, user, inviteId}
+	_returns := &Z_BeforeCreateUserWithInviteIdReturns{}
+	var _err error
+	if g.implemented[BeforeCreateUserWithInviteIdID] {
+		_err = g.client.Call("Plugin.BeforeCreateUserWithInviteId", _args, _returns)
+		if _err != nil {
+			// Reset _returns so partial gob decoding can't leak non-zero
+			// values past a transport failure (HooksWithRPCErr contract).
+			_returns = &Z_BeforeCreateUserWithInviteIdReturns{}
+			g.log.Debug("RPC call BeforeCreateUserWithInviteId to plugin failed.", mlog.Err(_err))
+		}
+	}
+	return _returns.A, _returns.B, _err
+}
+
+func (s *hooksRPCServer) BeforeCreateUserWithInviteId(args *Z_BeforeCreateUserWithInviteIdArgs, returns *Z_BeforeCreateUserWithInviteIdReturns) error {
+	if hook, ok := s.impl.(interface {
+		BeforeCreateUserWithInviteId(c *Context, user *model.User, inviteId string) (*model.User, string)
+	}); ok {
+		returns.A, returns.B = hook.BeforeCreateUserWithInviteId(args.A, args.B, args.C)
+	} else {
+		return encodableError(fmt.Errorf("Hook BeforeCreateUserWithInviteId called but not implemented."))
+	}
+	return nil
+}
+
+func init() {
+	hookNameToId["BeforeCreateUserFromSignup"] = BeforeCreateUserFromSignupID
+}
+
+type Z_BeforeCreateUserFromSignupArgs struct {
+	A *Context
+	B *model.User
+}
+
+type Z_BeforeCreateUserFromSignupReturns struct {
+	A *model.User
+	B string
+}
+
+func (g *hooksRPCClient) BeforeCreateUserFromSignup(c *Context, user *model.User) (*model.User, string) {
+	_args := &Z_BeforeCreateUserFromSignupArgs{c, user}
+	_returns := &Z_BeforeCreateUserFromSignupReturns{}
+	if g.implemented[BeforeCreateUserFromSignupID] {
+		if err := g.client.Call("Plugin.BeforeCreateUserFromSignup", _args, _returns); err != nil {
+			g.log.Error("RPC call BeforeCreateUserFromSignup to plugin failed.", mlog.Err(err))
+		}
+	}
+	return _returns.A, _returns.B
+}
+
+// BeforeCreateUserFromSignupWithRPCErr returns the same values as BeforeCreateUserFromSignup, with an additional trailing error
+// for the RPC transport — always the LAST return slot.
+func (g *hooksRPCClient) BeforeCreateUserFromSignupWithRPCErr(c *Context, user *model.User) (*model.User, string, error) {
+	_args := &Z_BeforeCreateUserFromSignupArgs{c, user}
+	_returns := &Z_BeforeCreateUserFromSignupReturns{}
+	var _err error
+	if g.implemented[BeforeCreateUserFromSignupID] {
+		_err = g.client.Call("Plugin.BeforeCreateUserFromSignup", _args, _returns)
+		if _err != nil {
+			// Reset _returns so partial gob decoding can't leak non-zero
+			// values past a transport failure (HooksWithRPCErr contract).
+			_returns = &Z_BeforeCreateUserFromSignupReturns{}
+			g.log.Debug("RPC call BeforeCreateUserFromSignup to plugin failed.", mlog.Err(_err))
+		}
+	}
+	return _returns.A, _returns.B, _err
+}
+
+func (s *hooksRPCServer) BeforeCreateUserFromSignup(args *Z_BeforeCreateUserFromSignupArgs, returns *Z_BeforeCreateUserFromSignupReturns) error {
+	if hook, ok := s.impl.(interface {
+		BeforeCreateUserFromSignup(c *Context, user *model.User) (*model.User, string)
+	}); ok {
+		returns.A, returns.B = hook.BeforeCreateUserFromSignup(args.A, args.B)
+	} else {
+		return encodableError(fmt.Errorf("Hook BeforeCreateUserFromSignup called but not implemented."))
+	}
+	return nil
+}
+
+func init() {
+	hookNameToId["BeforeCreateTeamWithUser"] = BeforeCreateTeamWithUserID
+}
+
+type Z_BeforeCreateTeamWithUserArgs struct {
+	A *Context
+	B *model.Team
+	C *model.User
+}
+
+type Z_BeforeCreateTeamWithUserReturns struct {
+	A *model.Team
+	B string
+}
+
+func (g *hooksRPCClient) BeforeCreateTeamWithUser(c *Context, team *model.Team, user *model.User) (*model.Team, string) {
+	_args := &Z_BeforeCreateTeamWithUserArgs{c, team, user}
+	_returns := &Z_BeforeCreateTeamWithUserReturns{}
+	if g.implemented[BeforeCreateTeamWithUserID] {
+		if err := g.client.Call("Plugin.BeforeCreateTeamWithUser", _args, _returns); err != nil {
+			g.log.Error("RPC call BeforeCreateTeamWithUser to plugin failed.", mlog.Err(err))
+		}
+	}
+	return _returns.A, _returns.B
+}
+
+// BeforeCreateTeamWithUserWithRPCErr returns the same values as BeforeCreateTeamWithUser, with an additional trailing error
+// for the RPC transport — always the LAST return slot.
+func (g *hooksRPCClient) BeforeCreateTeamWithUserWithRPCErr(c *Context, team *model.Team, user *model.User) (*model.Team, string, error) {
+	_args := &Z_BeforeCreateTeamWithUserArgs{c, team, user}
+	_returns := &Z_BeforeCreateTeamWithUserReturns{}
+	var _err error
+	if g.implemented[BeforeCreateTeamWithUserID] {
+		_err = g.client.Call("Plugin.BeforeCreateTeamWithUser", _args, _returns)
+		if _err != nil {
+			// Reset _returns so partial gob decoding can't leak non-zero
+			// values past a transport failure (HooksWithRPCErr contract).
+			_returns = &Z_BeforeCreateTeamWithUserReturns{}
+			g.log.Debug("RPC call BeforeCreateTeamWithUser to plugin failed.", mlog.Err(_err))
+		}
+	}
+	return _returns.A, _returns.B, _err
+}
+
+func (s *hooksRPCServer) BeforeCreateTeamWithUser(args *Z_BeforeCreateTeamWithUserArgs, returns *Z_BeforeCreateTeamWithUserReturns) error {
+	if hook, ok := s.impl.(interface {
+		BeforeCreateTeamWithUser(c *Context, team *model.Team, user *model.User) (*model.Team, string)
+	}); ok {
+		returns.A, returns.B = hook.BeforeCreateTeamWithUser(args.A, args.B, args.C)
+	} else {
+		return encodableError(fmt.Errorf("Hook BeforeCreateTeamWithUser called but not implemented."))
+	}
+	return nil
+}
+
+func init() {
 	hookNameToId["OnSharedChannelsSyncMsg"] = OnSharedChannelsSyncMsgID
 }
 
@@ -2207,6 +2537,8 @@ type HooksWithRPCErrGenerated interface {
 
 	UserHasBeenCreatedWithRPCErr(c *Context, user *model.User) error
 
+	UserWillBeUpdatedWithRPCErr(c *Context, newUser, oldUser *model.User, asAdmin bool) (*model.User, string, error)
+
 	UserWillLogInWithRPCErr(c *Context, user *model.User) (string, error)
 
 	UserHasLoggedInWithRPCErr(c *Context, user *model.User) error
@@ -2258,6 +2590,16 @@ type HooksWithRPCErrGenerated interface {
 	NotificationWillBePushedWithRPCErr(pushNotification *model.PushNotification, userID string) (*model.PushNotification, string, error)
 
 	UserHasBeenDeactivatedWithRPCErr(c *Context, user *model.User) error
+
+	BeforeSearchUsersWithRPCErr(c *Context, search *model.UserSearch, options *model.UserSearchOptions, asAdmin bool) ([]*model.User, string, error)
+
+	BeforeGetUsersPageWithRPCErr(options *model.UserGetOptions, asAdmin bool) ([]*model.User, string, error)
+
+	BeforeCreateUserWithInviteIdWithRPCErr(c *Context, user *model.User, inviteId string) (*model.User, string, error)
+
+	BeforeCreateUserFromSignupWithRPCErr(c *Context, user *model.User) (*model.User, string, error)
+
+	BeforeCreateTeamWithUserWithRPCErr(c *Context, team *model.Team, user *model.User) (*model.Team, string, error)
 
 	OnSharedChannelsSyncMsgWithRPCErr(msg *model.SyncMsg, rc *model.RemoteCluster) (model.SyncResponse, error, error)
 
@@ -5408,6 +5750,34 @@ func (s *apiRPCServer) DeletePost(args *Z_DeletePostArgs, returns *Z_DeletePostR
 		returns.A = hook.DeletePost(args.A)
 	} else {
 		return encodableError(fmt.Errorf("API DeletePost called but not implemented."))
+	}
+	return nil
+}
+
+type Z_PermanentDeletePostArgs struct {
+	A string
+}
+
+type Z_PermanentDeletePostReturns struct {
+	A *model.AppError
+}
+
+func (g *apiRPCClient) PermanentDeletePost(postId string) *model.AppError {
+	_args := &Z_PermanentDeletePostArgs{postId}
+	_returns := &Z_PermanentDeletePostReturns{}
+	if err := g.client.Call("Plugin.PermanentDeletePost", _args, _returns); err != nil {
+		log.Printf("RPC call to PermanentDeletePost API failed: %s", err.Error())
+	}
+	return _returns.A
+}
+
+func (s *apiRPCServer) PermanentDeletePost(args *Z_PermanentDeletePostArgs, returns *Z_PermanentDeletePostReturns) error {
+	if hook, ok := s.impl.(interface {
+		PermanentDeletePost(postId string) *model.AppError
+	}); ok {
+		returns.A = hook.PermanentDeletePost(args.A)
+	} else {
+		return encodableError(fmt.Errorf("API PermanentDeletePost called but not implemented."))
 	}
 	return nil
 }
