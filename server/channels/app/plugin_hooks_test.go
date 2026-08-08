@@ -988,6 +988,371 @@ func TestUserHasBeenCreated(t *testing.T) {
 	require.Equal(t, "plugin-callback-success", user.Nickname)
 }
 
+func TestUserWillBeUpdated_BlockedForNonAdmin(t *testing.T) {
+	mainHelper.Parallel(t)
+	th := Setup(t, StartMetrics)
+
+	tearDown, _, _ := SetAppEnvironmentWithPlugins(t,
+		[]string{
+			`
+		package main
+
+		import (
+			"github.com/mattermost/mattermost/server/public/plugin"
+			"github.com/mattermost/mattermost/server/public/model"
+		)
+
+		type MyPlugin struct {
+			plugin.MattermostPlugin
+		}
+
+		func (p *MyPlugin) UserWillBeUpdated(c *plugin.Context, newUser, oldUser *model.User, asAdmin bool) (*model.User, string) {
+			if !asAdmin && newUser.Username != oldUser.Username {
+				return nil, "禁止修改用户名"
+			}
+			return nil, ""
+		}
+
+		func main() {
+			plugin.ClientMain(&MyPlugin{})
+		}
+	`,
+		}, th.App, th.NewPluginAPI)
+	defer tearDown()
+
+	user := th.CreateUser(t)
+	user.Username = model.NewId()
+
+	_, appErr := th.App.UpdateUserAsUser(th.Context, user, false)
+	require.NotNil(t, appErr)
+	assert.Contains(t, appErr.Id, "禁止修改用户名")
+}
+
+func TestUserWillBeUpdated_BlocksPatchUser(t *testing.T) {
+	mainHelper.Parallel(t)
+	th := Setup(t, StartMetrics)
+
+	tearDown, _, _ := SetAppEnvironmentWithPlugins(t,
+		[]string{
+			`
+		package main
+
+		import (
+			"github.com/mattermost/mattermost/server/public/plugin"
+			"github.com/mattermost/mattermost/server/public/model"
+		)
+
+		type MyPlugin struct {
+			plugin.MattermostPlugin
+		}
+
+		func (p *MyPlugin) UserWillBeUpdated(c *plugin.Context, newUser, oldUser *model.User, asAdmin bool) (*model.User, string) {
+			if newUser.Nickname != oldUser.Nickname {
+				return nil, "nickname update blocked"
+			}
+			return nil, ""
+		}
+
+		func main() {
+			plugin.ClientMain(&MyPlugin{})
+		}
+	`,
+		}, th.App, th.NewPluginAPI)
+	defer tearDown()
+
+	user := th.CreateUser(t)
+	newNickname := "patched-nickname"
+	patch := &model.UserPatch{Nickname: &newNickname}
+
+	_, appErr := th.App.PatchUser(th.Context, user.Id, patch, false)
+	require.NotNil(t, appErr)
+	assert.Contains(t, appErr.Id, "nickname update blocked")
+
+	storedUser, getErr := th.App.GetUser(user.Id)
+	require.Nil(t, getErr)
+	assert.NotEqual(t, newNickname, storedUser.Nickname)
+}
+
+func TestBeforeSearchUsers_ReturnsEmptyForShortTermNonAdmin(t *testing.T) {
+	mainHelper.Parallel(t)
+	th := Setup(t, StartMetrics).InitBasic(t)
+
+	tearDown, _, _ := SetAppEnvironmentWithPlugins(t,
+		[]string{
+			`
+		package main
+
+		import (
+			"github.com/mattermost/mattermost/server/public/plugin"
+			"github.com/mattermost/mattermost/server/public/model"
+		)
+
+		type MyPlugin struct {
+			plugin.MattermostPlugin
+		}
+
+		func (p *MyPlugin) BeforeSearchUsers(c *plugin.Context, search *model.UserSearch, options *model.UserSearchOptions, asAdmin bool) ([]*model.User, string) {
+			onlyTerm := search.TeamId == "" && search.NotInTeamId == "" && search.InChannelId == "" && search.NotInChannelId == "" && search.InGroupId == "" && search.NotInGroupId == "" && !search.WithoutTeam && !search.GroupConstrained && !search.AllowInactive && search.Role == "" && len(search.Roles) == 0 && len(search.ChannelRoles) == 0 && len(search.TeamRoles) == 0
+			if !asAdmin && onlyTerm && len(search.Term) < 6 {
+				return []*model.User{}, ""
+			}
+			return nil, ""
+		}
+
+		func main() {
+			plugin.ClientMain(&MyPlugin{})
+		}
+	`,
+		}, th.App, th.NewPluginAPI)
+	defer tearDown()
+
+	profiles, appErr := th.App.SearchUsers(th.Context, &model.UserSearch{Term: "short"}, &model.UserSearchOptions{IsAdmin: false, Limit: 100})
+	require.Nil(t, appErr)
+	require.Empty(t, profiles)
+}
+
+func TestBeforeGetUsersPage_ReturnsEmptyForNonAdminWithoutFilters(t *testing.T) {
+	mainHelper.Parallel(t)
+	th := Setup(t, StartMetrics).InitBasic(t)
+
+	tearDown, _, _ := SetAppEnvironmentWithPlugins(t,
+		[]string{
+			`
+		package main
+
+		import (
+			"github.com/mattermost/mattermost/server/public/plugin"
+			"github.com/mattermost/mattermost/server/public/model"
+		)
+
+		type MyPlugin struct {
+			plugin.MattermostPlugin
+		}
+
+		func (p *MyPlugin) BeforeGetUsersPage(options *model.UserGetOptions, asAdmin bool) ([]*model.User, string) {
+			if !asAdmin && options != nil && options.InTeamId == "" && options.NotInTeamId == "" && options.InChannelId == "" && options.NotInChannelId == "" && options.InGroupId == "" && options.NotInGroupId == "" && !options.GroupConstrained && !options.WithoutTeam && !options.Inactive && !options.Active && options.Role == "" && len(options.Roles) == 0 && len(options.ChannelRoles) == 0 && len(options.TeamRoles) == 0 && options.ViewRestrictions == nil {
+				return []*model.User{}, ""
+			}
+			return nil, ""
+		}
+
+		func main() {
+			plugin.ClientMain(&MyPlugin{})
+		}
+	`,
+		}, th.App, th.NewPluginAPI)
+	defer tearDown()
+
+	profiles, appErr := th.App.GetUsersPage(&model.UserGetOptions{}, false)
+	require.Nil(t, appErr)
+	require.Empty(t, profiles)
+}
+
+func TestBeforeCreateUserWithInviteId_RejectsInviteSignup(t *testing.T) {
+	mainHelper.Parallel(t)
+	th := Setup(t, StartMetrics).InitBasic(t)
+
+	tearDown, _, _ := SetAppEnvironmentWithPlugins(t,
+		[]string{
+			`
+		package main
+
+		import (
+			"github.com/mattermost/mattermost/server/public/model"
+			"github.com/mattermost/mattermost/server/public/plugin"
+		)
+
+		type MyPlugin struct {
+			plugin.MattermostPlugin
+		}
+
+		func (p *MyPlugin) BeforeCreateUserWithInviteId(c *plugin.Context, user *model.User, inviteId string) (*model.User, string) {
+			if user != nil && user.Username == "blockedinvite" {
+				return nil, "invite signup blocked"
+			}
+			return nil, ""
+		}
+
+		func main() {
+			plugin.ClientMain(&MyPlugin{})
+		}
+	`,
+		}, th.App, th.NewPluginAPI)
+	defer tearDown()
+
+	user := &model.User{
+		Email:       strings.ToLower(model.NewId()) + "+blocked@example.com",
+		Username:    "blockedinvite",
+		Nickname:    "Blocked Invite",
+		Password:    model.NewTestPassword(),
+		AuthService: "",
+	}
+
+	_, appErr := th.App.CreateUserWithInviteId(th.Context, user, th.BasicTeam.InviteId, "")
+	require.NotNil(t, appErr)
+	assert.Contains(t, appErr.Id, "invite signup blocked")
+}
+
+func TestBeforeCreateUserWithInviteId_CanMutateUserBeforeDomainCheck(t *testing.T) {
+	mainHelper.Parallel(t)
+	th := Setup(t, StartMetrics).InitBasic(t)
+
+	originalAllowedDomains := th.BasicTeam.AllowedDomains
+	defer func() {
+		th.BasicTeam.AllowedDomains = originalAllowedDomains
+		_, nErr := th.App.Srv().Store().Team().Update(th.BasicTeam)
+		require.NoError(t, nErr)
+	}()
+
+	th.BasicTeam.AllowedDomains = "holycity.cc"
+	_, nErr := th.App.Srv().Store().Team().Update(th.BasicTeam)
+	require.NoError(t, nErr)
+
+	tearDown, _, _ := SetAppEnvironmentWithPlugins(t,
+		[]string{
+			`
+		package main
+
+		import (
+			"github.com/mattermost/mattermost/server/public/model"
+			"github.com/mattermost/mattermost/server/public/plugin"
+		)
+
+		type MyPlugin struct {
+			plugin.MattermostPlugin
+		}
+
+		func (p *MyPlugin) BeforeCreateUserWithInviteId(c *plugin.Context, user *model.User, inviteId string) (*model.User, string) {
+			if user != nil {
+				user.Email = user.Username + "@holycity.cc"
+			}
+			return user, ""
+		}
+
+		func main() {
+			plugin.ClientMain(&MyPlugin{})
+		}
+	`,
+		}, th.App, th.NewPluginAPI)
+	defer tearDown()
+
+	user := &model.User{
+		Email:       strings.ToLower(model.NewId()) + "+blocked@example.com",
+		Username:    "mutatedinvite" + model.NewId()[0:4],
+		Nickname:    "Mutated Invite",
+		Password:    model.NewTestPassword(),
+		AuthService: "",
+	}
+
+	createdUser, appErr := th.App.CreateUserWithInviteId(th.Context, user, th.BasicTeam.InviteId, "")
+	require.Nil(t, appErr)
+	require.NotNil(t, createdUser)
+	assert.Equal(t, user.Username+"@holycity.cc", createdUser.Email)
+}
+
+func TestBeforeCreateUserFromSignup_RejectsSignup(t *testing.T) {
+	mainHelper.Parallel(t)
+	th := Setup(t, StartMetrics).InitBasic(t)
+
+	th.App.UpdateConfig(func(cfg *model.Config) {
+		*cfg.TeamSettings.EnableOpenServer = true
+		*cfg.TeamSettings.EnableUserCreation = true
+		*cfg.EmailSettings.EnableSignUpWithEmail = true
+	})
+
+	tearDown, _, _ := SetAppEnvironmentWithPlugins(t,
+		[]string{
+			`
+		package main
+
+		import (
+			"github.com/mattermost/mattermost/server/public/model"
+			"github.com/mattermost/mattermost/server/public/plugin"
+		)
+
+		type MyPlugin struct {
+			plugin.MattermostPlugin
+		}
+
+		func (p *MyPlugin) BeforeCreateUserFromSignup(c *plugin.Context, user *model.User) (*model.User, string) {
+			if user != nil && user.Username == "blockedsignup" {
+				return nil, "signup blocked"
+			}
+			return nil, ""
+		}
+
+		func main() {
+			plugin.ClientMain(&MyPlugin{})
+		}
+	`,
+		}, th.App, th.NewPluginAPI)
+	defer tearDown()
+
+	user := &model.User{
+		Email:       strings.ToLower(model.NewId()) + "+signup@example.com",
+		Username:    "blockedsignup",
+		Nickname:    "Blocked Signup",
+		Password:    model.NewTestPassword(),
+		AuthService: "",
+	}
+
+	_, appErr := th.App.CreateUserFromSignup(th.Context, user, "")
+	require.NotNil(t, appErr)
+	assert.Contains(t, appErr.Id, "signup blocked")
+}
+
+func TestBeforeCreateUserFromSignup_CanMutateUserBeforeCreate(t *testing.T) {
+	mainHelper.Parallel(t)
+	th := Setup(t, StartMetrics).InitBasic(t)
+
+	th.App.UpdateConfig(func(cfg *model.Config) {
+		*cfg.TeamSettings.EnableOpenServer = true
+		*cfg.TeamSettings.EnableUserCreation = true
+		*cfg.EmailSettings.EnableSignUpWithEmail = true
+	})
+
+	tearDown, _, _ := SetAppEnvironmentWithPlugins(t,
+		[]string{
+			`
+		package main
+
+		import (
+			"github.com/mattermost/mattermost/server/public/model"
+			"github.com/mattermost/mattermost/server/public/plugin"
+		)
+
+		type MyPlugin struct {
+			plugin.MattermostPlugin
+		}
+
+		func (p *MyPlugin) BeforeCreateUserFromSignup(c *plugin.Context, user *model.User) (*model.User, string) {
+			if user != nil {
+				user.Email = user.Username + "@holycity.cc"
+			}
+			return user, ""
+		}
+
+		func main() {
+			plugin.ClientMain(&MyPlugin{})
+		}
+	`,
+		}, th.App, th.NewPluginAPI)
+	defer tearDown()
+
+	user := &model.User{
+		Email:       strings.ToLower(model.NewId()) + "+signup@example.com",
+		Username:    "mutatedsignup" + model.NewId()[0:4],
+		Nickname:    "Mutated Signup",
+		Password:    model.NewTestPassword(),
+		AuthService: "",
+	}
+
+	createdUser, appErr := th.App.CreateUserFromSignup(th.Context, user, "")
+	require.Nil(t, appErr)
+	require.NotNil(t, createdUser)
+	assert.Equal(t, user.Username+"@holycity.cc", createdUser.Email)
+}
+
 func TestErrorString(t *testing.T) {
 	mainHelper.Parallel(t)
 	th := Setup(t, StartMetrics)
@@ -3727,6 +4092,47 @@ func TestHookTeamMemberWillBeAdded(t *testing.T) {
 		_, appErr := th.App.CreateTeamWithUser(th.Context, team, th.BasicUser.Id)
 		require.NotNil(t, appErr)
 		assert.Contains(t, appErr.Id, "rejected_by_plugin")
+	})
+
+	t.Run("CreateTeamWithUser rejected by BeforeCreateTeamWithUser", func(t *testing.T) {
+		mainHelper.Parallel(t)
+		th := Setup(t).InitBasic(t)
+
+		tearDown, _, _ := SetAppEnvironmentWithPlugins(t, []string{
+			`
+			package main
+
+			import (
+				"github.com/mattermost/mattermost/server/public/model"
+				"github.com/mattermost/mattermost/server/public/plugin"
+			)
+
+			type MyPlugin struct {
+				plugin.MattermostPlugin
+			}
+
+			func (p *MyPlugin) BeforeCreateTeamWithUser(c *plugin.Context, team *model.Team, user *model.User) (*model.Team, string) {
+				if user != nil && user.Username != "" {
+					return nil, "create team blocked"
+				}
+				return nil, ""
+			}
+
+			func main() {
+				plugin.ClientMain(&MyPlugin{})
+			}
+			`,
+		}, th.App, th.NewPluginAPI)
+		defer tearDown()
+
+		team := &model.Team{
+			DisplayName: "Blocked Team",
+			Name:        "blocked-team-" + model.NewId()[:8],
+			Type:        model.TeamOpen,
+		}
+		_, appErr := th.App.CreateTeamWithUser(th.Context, team, th.BasicUser.Id)
+		require.NotNil(t, appErr)
+		assert.Contains(t, appErr.Id, "create team blocked")
 	})
 }
 

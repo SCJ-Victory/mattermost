@@ -728,6 +728,12 @@ type API interface {
 	// Minimum server version: 5.2
 	DeletePost(postId string) *model.AppError
 
+	// PermanentDeletePost permanently deletes a post.
+	//
+	// @tag Post
+	// Minimum server version: 5.2
+	PermanentDeletePost(postId string) *model.AppError
+
 	// GetPostThread gets a post with all the other posts in the same thread.
 	//
 	// @tag Post

@@ -76,6 +76,13 @@ func (hooks *hooksTimerLayer) UserHasBeenCreated(c *Context, user *model.User) {
 	hooks.recordTime(startTime, "UserHasBeenCreated", true)
 }
 
+func (hooks *hooksTimerLayer) UserWillBeUpdated(c *Context, newUser, oldUser *model.User, asAdmin bool) (*model.User, string) {
+	startTime := timePkg.Now()
+	_returnsA, _returnsB := hooks.hooksImpl.UserWillBeUpdated(c, newUser, oldUser, asAdmin)
+	hooks.recordTime(startTime, "UserWillBeUpdated", true)
+	return _returnsA, _returnsB
+}
+
 func (hooks *hooksTimerLayer) UserWillLogIn(c *Context, user *model.User) string {
 	startTime := timePkg.Now()
 	_returnsA := hooks.hooksImpl.UserWillLogIn(c, user)
@@ -289,6 +296,41 @@ func (hooks *hooksTimerLayer) UserHasBeenDeactivated(c *Context, user *model.Use
 	hooks.recordTime(startTime, "UserHasBeenDeactivated", true)
 }
 
+func (hooks *hooksTimerLayer) BeforeSearchUsers(c *Context, search *model.UserSearch, options *model.UserSearchOptions, asAdmin bool) ([]*model.User, string) {
+	startTime := timePkg.Now()
+	_returnsA, _returnsB := hooks.hooksImpl.BeforeSearchUsers(c, search, options, asAdmin)
+	hooks.recordTime(startTime, "BeforeSearchUsers", true)
+	return _returnsA, _returnsB
+}
+
+func (hooks *hooksTimerLayer) BeforeGetUsersPage(options *model.UserGetOptions, asAdmin bool) ([]*model.User, string) {
+	startTime := timePkg.Now()
+	_returnsA, _returnsB := hooks.hooksImpl.BeforeGetUsersPage(options, asAdmin)
+	hooks.recordTime(startTime, "BeforeGetUsersPage", true)
+	return _returnsA, _returnsB
+}
+
+func (hooks *hooksTimerLayer) BeforeCreateUserWithInviteId(c *Context, user *model.User, inviteId string) (*model.User, string) {
+	startTime := timePkg.Now()
+	_returnsA, _returnsB := hooks.hooksImpl.BeforeCreateUserWithInviteId(c, user, inviteId)
+	hooks.recordTime(startTime, "BeforeCreateUserWithInviteId", true)
+	return _returnsA, _returnsB
+}
+
+func (hooks *hooksTimerLayer) BeforeCreateUserFromSignup(c *Context, user *model.User) (*model.User, string) {
+	startTime := timePkg.Now()
+	_returnsA, _returnsB := hooks.hooksImpl.BeforeCreateUserFromSignup(c, user)
+	hooks.recordTime(startTime, "BeforeCreateUserFromSignup", true)
+	return _returnsA, _returnsB
+}
+
+func (hooks *hooksTimerLayer) BeforeCreateTeamWithUser(c *Context, team *model.Team, user *model.User) (*model.Team, string) {
+	startTime := timePkg.Now()
+	_returnsA, _returnsB := hooks.hooksImpl.BeforeCreateTeamWithUser(c, team, user)
+	hooks.recordTime(startTime, "BeforeCreateTeamWithUser", true)
+	return _returnsA, _returnsB
+}
+
 func (hooks *hooksTimerLayer) ServeMetrics(c *Context, w http.ResponseWriter, r *http.Request) {
 	startTime := timePkg.Now()
 	hooks.hooksImpl.ServeMetrics(c, w, r)
@@ -397,6 +439,13 @@ func (hooks *hooksTimerLayer) UserHasBeenCreatedWithRPCErr(c *Context, user *mod
 	_returnsRPCErr := hooks.hooksWithRPCErrImpl.UserHasBeenCreatedWithRPCErr(c, user)
 	hooks.recordTime(startTime, "UserHasBeenCreatedWithRPCErr", _returnsRPCErr == nil)
 	return _returnsRPCErr
+}
+
+func (hooks *hooksTimerLayer) UserWillBeUpdatedWithRPCErr(c *Context, newUser, oldUser *model.User, asAdmin bool) (*model.User, string, error) {
+	startTime := timePkg.Now()
+	_returnsA, _returnsB, _returnsRPCErr := hooks.hooksWithRPCErrImpl.UserWillBeUpdatedWithRPCErr(c, newUser, oldUser, asAdmin)
+	hooks.recordTime(startTime, "UserWillBeUpdatedWithRPCErr", _returnsRPCErr == nil)
+	return _returnsA, _returnsB, _returnsRPCErr
 }
 
 func (hooks *hooksTimerLayer) UserWillLogInWithRPCErr(c *Context, user *model.User) (string, error) {
@@ -579,6 +628,41 @@ func (hooks *hooksTimerLayer) UserHasBeenDeactivatedWithRPCErr(c *Context, user 
 	_returnsRPCErr := hooks.hooksWithRPCErrImpl.UserHasBeenDeactivatedWithRPCErr(c, user)
 	hooks.recordTime(startTime, "UserHasBeenDeactivatedWithRPCErr", _returnsRPCErr == nil)
 	return _returnsRPCErr
+}
+
+func (hooks *hooksTimerLayer) BeforeSearchUsersWithRPCErr(c *Context, search *model.UserSearch, options *model.UserSearchOptions, asAdmin bool) ([]*model.User, string, error) {
+	startTime := timePkg.Now()
+	_returnsA, _returnsB, _returnsRPCErr := hooks.hooksWithRPCErrImpl.BeforeSearchUsersWithRPCErr(c, search, options, asAdmin)
+	hooks.recordTime(startTime, "BeforeSearchUsersWithRPCErr", _returnsRPCErr == nil)
+	return _returnsA, _returnsB, _returnsRPCErr
+}
+
+func (hooks *hooksTimerLayer) BeforeGetUsersPageWithRPCErr(options *model.UserGetOptions, asAdmin bool) ([]*model.User, string, error) {
+	startTime := timePkg.Now()
+	_returnsA, _returnsB, _returnsRPCErr := hooks.hooksWithRPCErrImpl.BeforeGetUsersPageWithRPCErr(options, asAdmin)
+	hooks.recordTime(startTime, "BeforeGetUsersPageWithRPCErr", _returnsRPCErr == nil)
+	return _returnsA, _returnsB, _returnsRPCErr
+}
+
+func (hooks *hooksTimerLayer) BeforeCreateUserWithInviteIdWithRPCErr(c *Context, user *model.User, inviteId string) (*model.User, string, error) {
+	startTime := timePkg.Now()
+	_returnsA, _returnsB, _returnsRPCErr := hooks.hooksWithRPCErrImpl.BeforeCreateUserWithInviteIdWithRPCErr(c, user, inviteId)
+	hooks.recordTime(startTime, "BeforeCreateUserWithInviteIdWithRPCErr", _returnsRPCErr == nil)
+	return _returnsA, _returnsB, _returnsRPCErr
+}
+
+func (hooks *hooksTimerLayer) BeforeCreateUserFromSignupWithRPCErr(c *Context, user *model.User) (*model.User, string, error) {
+	startTime := timePkg.Now()
+	_returnsA, _returnsB, _returnsRPCErr := hooks.hooksWithRPCErrImpl.BeforeCreateUserFromSignupWithRPCErr(c, user)
+	hooks.recordTime(startTime, "BeforeCreateUserFromSignupWithRPCErr", _returnsRPCErr == nil)
+	return _returnsA, _returnsB, _returnsRPCErr
+}
+
+func (hooks *hooksTimerLayer) BeforeCreateTeamWithUserWithRPCErr(c *Context, team *model.Team, user *model.User) (*model.Team, string, error) {
+	startTime := timePkg.Now()
+	_returnsA, _returnsB, _returnsRPCErr := hooks.hooksWithRPCErrImpl.BeforeCreateTeamWithUserWithRPCErr(c, team, user)
+	hooks.recordTime(startTime, "BeforeCreateTeamWithUserWithRPCErr", _returnsRPCErr == nil)
+	return _returnsA, _returnsB, _returnsRPCErr
 }
 
 func (hooks *hooksTimerLayer) OnSharedChannelsSyncMsgWithRPCErr(msg *model.SyncMsg, rc *model.RemoteCluster) (model.SyncResponse, error, error) {

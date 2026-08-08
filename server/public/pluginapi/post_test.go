@@ -143,6 +143,32 @@ func TestDeletePost(t *testing.T) {
 	})
 }
 
+func TestPermanentDeletePost(t *testing.T) {
+	t.Run("success", func(t *testing.T) {
+		api := &plugintest.API{}
+		defer api.AssertExpectations(t)
+		client := pluginapi.NewClient(api, &plugintest.Driver{})
+
+		postID := "postID"
+		api.On("PermanentDeletePost", postID).Return(nil)
+
+		err := client.Post.PermanentDeletePost(postID)
+		require.NoError(t, err)
+	})
+
+	t.Run("failure", func(t *testing.T) {
+		api := &plugintest.API{}
+		defer api.AssertExpectations(t)
+		client := pluginapi.NewClient(api, &plugintest.Driver{})
+
+		postID := "postID"
+		api.On("PermanentDeletePost", postID).Return(newAppError())
+
+		err := client.Post.PermanentDeletePost(postID)
+		require.EqualError(t, err, "here: id, an error occurred")
+	})
+}
+
 func TestSendEphemeralPost(t *testing.T) {
 	api := &plugintest.API{}
 	defer api.AssertExpectations(t)
