@@ -1606,7 +1606,8 @@ func (a *App) UpdateUser(rctx request.CTX, user *model.User, sendNotifications b
 
 	asAdmin := false
 	if rctx.Session() != nil {
-		asAdmin = a.SessionHasPermissionTo(*rctx.Session(), model.PermissionManageSystem)
+		session := rctx.Session()
+		asAdmin = session.UserId == "" || a.SessionHasPermissionTo(*session, model.PermissionManageSystem)
 	}
 
 	rejectedReason := ""
