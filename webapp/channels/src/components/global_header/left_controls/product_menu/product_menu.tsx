@@ -179,7 +179,7 @@ const ProductMenu = (): JSX.Element => {
                     <ProductMenuItem
                         destination={'/'}
                         icon={'product-channels'}
-                        text={'Channels'}
+                        text={formatMessage({id: 'admin.sidebar.channels', defaultMessage: 'Channels'})}
                         active={isChannels(currentProductID)}
                         onClick={handleClick}
                     />
